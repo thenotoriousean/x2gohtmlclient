@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+
+<!--
+ Copyright © 2020-2021 Oleksandr Shneyder <o.shneyder@phoca-gmbh.de>
+
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU Affero General Public License as published
+ by the Free Software Foundation; either version 3 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU Affero General Public License for more details.
+
+ You should have received a copy of the GNU Affero General Public License
+ along with this program; if not, write to the
+ Free Software Foundation, Inc.,
+ 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
+-->
+
+<html>
+<head>
+<!-- <h1>X2Go HTML Client</h1> -->
+<link rel="stylesheet" href="./assets/css/x2gostyle.css">
+</head>
+<body>
+
+
+
+<div id="controls">
+
+
+<p>
+<div id="choice-div" class="row chart-types">
+<div id= "embed" class="chart-type active" data-type="embed" style="display:table-cell" >Embedded HTML Client</div>
+<div id= "native" class="chart-type" data-type="native"  style="display:table-cell" >Native X2Go Client</div>
+</div>
+</p>
+
+<div id="client_installer" style="display:none">
+<br>
+ <p>To start X2Go connection you need <strong>X2Go Client</strong> to be installed on your computer<br>
+Don't have it yet? <a href="http://www.x2go.org">Check installation instructions</a>
+</p>
+</div>
+
+
+
+<form id="form">
+<p>
+<label class="control-label" for="server">Server:</label>
+<input type="text" class="form-control" id="server" name="server" required>
+</p>
+<p>
+<label class="control-label" for="uname">User:</label>
+<input type="text" class="form-control" id="uname" name="uname" required oninput="uname_change()">
+</p>
+<p id="pass-input">
+<label class="control-label" for="pass">Password:</label>
+<input type="password" class="form-control" id="pass" name="pass" required>
+</p>
+
+<p>
+<label class="control-label" for="cmd">Desktop:</label>
+<select id="cmd" class="btn btn-lg btn-success login-btn" name="cmd">
+  <option value="XFCE">XFCE</option>
+  <option value="MATE">MATE</option>
+  <option value="KDE">KDE</option>
+  <option value="GNOME">GNOME</option>
+  <option value="LXDE">LXDE</option>
+  <option value="ICEWM">ICEWM</option>
+</select>
+</p>
+
+<p>
+<label class="control-label" for="compression">Compression:</label>
+<select id="compression" class="btn btn-lg btn-success login-btn" name="compression">
+  <option value="JPEG/PNG">JPEG/PNG</option>
+  <option value="H264">H264</option>
+</select>
+</p>
+
+
+
+</form>
+
+
+
+<p id="kdr-radio" style="display:none;">
+<input type="radio" id="kdr" name="kdr" value="kdr" checked="true" style="padding-right:5px;">
+<label class="control-label" for="kdr" style="padding-bottom:10px;vertical-align:text-bottom;">X2Go KDrive Session</label>
+<br>
+</p>
+
+<p id="nx-radio" style="display:none;">
+<input type="radio" id="nx" name="kdr" value="nx" style="padding-right:5px;">
+<label class="control-label" for="nx" style="padding-bottom:20px;vertical-align:text-bottom;">X2Go NX Session</label>
+<br>
+</p>
+
+
+
+<form id="proxy-input" style="display:none;border-style:solid;border-width:thin;border-color:lightgrey;">
+<p>
+<label  class="control-label" for="proxy">SSH Proxy:</label>
+<input list="proxyList" class="form-control" id="proxy" name="proxy">
+<datalist id="proxyList">
+</datalist>
+</p>
+
+<p>
+<label class="control-label" for="pr_uname">Proxy User:</label>
+<input type="text" class="form-control" id="pr_uname" name="pr_uname" disabled>
+</p>
+
+
+<p id="proxy-pass-input">
+<label class="control-label" for="pr_pass">Proxy Password:</label>
+<input type="password" class="form-control" id="pr_pass" name="pr_pass" disabled>
+</p>
+
+<div class="checkbox-container" style="display:inline">
+<input type="checkbox" id="pr_same_user" name="pr_same_user" value= "pr_same_user" checked style="margin-left:5px" onchange="pr_same_user_change()" >
+<label class="control-label" for="pr_same_user" style="vertical-align:text-bottom;" onchange="pr_same_user_change()" >Same User as on X2Go Server</label>
+</div>
+<br>
+<div class="checkbox-container" style="display:inline">
+<input type="checkbox" id="pr_same_pass" name="pr_same_pass" value= "pr_same_pass" checked  style="margin-left:5px" onchange="pr_same_pass_change()" >
+<label class="control-label" for="pr_same_pass" style="vertical-align:text-bottom;">Same Password as on X2Go Server</label>
+</div>
+</form>
+
+
+
+<div class="checkbox-container" style="display:inline">
+<input type="checkbox" id="adv" name="adv" value= "adv" onchange="show_advanced()" style="padding-right:5px;">
+<label class="control-label" for="adv" style="padding-bottom:15px;vertical-align:text-bottom;" >Advanced Options</label>
+</div>
+
+<input type="button" class="btn btn-lg btn-success login-btn" id="con-btn" value="Start X2Go Connection" style="display:block;" />
+<input type="button" class="btn btn-lg btn-success login-btn" id="con-btn_t" value="Start X2Go Client" style="display:none;"/>
+
+
+</div>
+
+
+
+<div id="status" style="display:none;min-width:1280px;float:left">
+ <span id="status_cap" style="display:inline-block; margin-top:10px;">Session status</span>
+ <span id="fps_display" style="display:inline-block; margin-top:10px;"></span>
+ <span id="bandwidth_display" style="display:inline-block; margin-top:10px;"></span>
+ <span id="delay_display" style="display:inline-block; margin-top:10px;"></span>
+
+ <div id="session_control" style="display:none;float:right;">
+
+ <div id="x2goclip" class="x2goclip" style="display:inline-block;">
+ <div id="x2goclip_text" contentEditable="true" class= "x2gocliptext"> Paste text or image here
+ </div>
+ <button id="close_clip" class="x2goimgbut x2goclipbut" ><img id="x2goclip_close_img" src="./assets/img/clip_copy_close.png"></button>
+ </div>
+
+
+ <div class="x2gotip" style="display:inline-block;">
+ <span class="x2gotiptext" id="serverclipnotify">New Image in Clipboard</span>
+ </div>
+
+
+ <div class="x2gotooltip">
+ <span class="x2gotooltiptext">X2Go to Clipboard</span>
+ <button id="copy_from" class="x2goimgbut" style="vertical-align:middle;margin-left:10px;margin-bottom:5px;"><img src="./assets/img/clip_from.png"></button>
+ </div>
+
+
+ <div class="x2gotip" style="display:inline-block;">
+ <span class="x2gotiptext" id="systemclipnotify">New Image in Clipboard</span>
+ </div>
+
+
+
+ <div class="x2gotooltip">
+ <span class="x2gotooltiptext">Clipboard to X2Go</span>
+ <button id="copy_to" class="x2goimgbut" style="vertical-align:middle;margin-left:10px;margin-bottom:5px;" ><img src="./assets/img/clip_to.png"></button>
+ </div>
+
+ <div class="x2gotooltip">
+ <span class="x2gotooltiptext">Suspend session</span>
+ <button id="suspend" class="x2goimgbut" style="vertical-align:middle;margin-left:10px;margin-bottom:5px;" ><img src="./assets/img/suspend.png"></button>
+ </div>
+
+ <div class="x2gotooltip">
+ <span class="x2gotooltiptext">Terminate session</span>
+ <button id="terminate" class="x2goimgbut" style="vertical-align:middle;margin-bottom:5px;" ><img src="./assets/img/stop.png"></button>
+ </div>
+
+ <div class="x2gotooltip">
+ <span id="detach_span" class="x2gotooltiptext">New window</span>
+ <button id="detach" class="x2goimgbut" style="vertical-align:middle;margin-bottom:5px;" ><img id="detach_img" src="./assets/img/detach.png"></button>
+ </div>
+ </div>
+
+</div>
+
+
+<script>
+
+
+
+var RPC_path="./assets/rpc/x2gorpc.cgi";
+var asset_path="./assets/img/";
+
+var name="X2Go Server";
+
+var pictureCount = 0;
+var lastPictureCount = 0;
+var dataReceived = 0;
+var lastdataReceived = 0;
+
+var serverTime = 0;
+var clientTime = 0;
+
+console.log("Starting X2GO HTML Client");
+
+document.getElementById("native").style.width="auto";
+document.getElementById("embed").style.width="auto";
+document.getElementById("choice-div").style.justifyContent="left";
+document.getElementById("choice-div").style.marginTop="10px";
+
+
+document.getElementById("server").addEventListener("keyup", function(event)
+{
+  if (event.keyCode === 13)
+  {
+    event.preventDefault();
+    document.getElementById("uname").focus();
+  }
+});
+
+document.getElementById("uname").addEventListener("keyup", function(event)
+{
+  if (event.keyCode === 13)
+  {
+    event.preventDefault();
+    if(document.getElementById("con-btn_t").style.display=="none")
+    {
+        document.getElementById("pass").focus();
+    }
+    else
+    {
+        document.getElementById("con-btn_t").click();
+    }
+
+  }
+});
+
+
+document.getElementById("pass").addEventListener("keyup", function(event)
+{
+  if (event.keyCode === 13)
+  {
+    event.preventDefault();
+    document.getElementById("con-btn").click();
+  }
+});
+
+document.getElementById("embed").addEventListener("click", function(e)
+{
+   client_choice(e)
+});
+
+document.getElementById("proxy").addEventListener("mousedown", function(e)
+{
+   document.getElementById("proxy").value="";
+});
+
+document.getElementById("native").addEventListener("click", function(e)
+{
+   client_choice(e)
+});
+
+
+
+document.getElementById("con-btn_t").addEventListener("click", function()
+{
+   if(!validateForm())
+   {
+        return;
+   }
+   let kdr="true";
+   if(document.getElementById("nx").checked)
+   {
+        kdr="false";
+   }
+   let text = "["+name+"]\n\
+command="+getCommand()+"\n\
+kdrive="+kdr+"\n\
+host="+getServer()+"\n\
+name="+name+"\n\
+sshport=22\n\
+sound=false\n\
+sshproxyhost="+getProxy()+"\n\
+sshproxyport=22\n\
+width=1024\n\
+height=768\n\
+sshproxytype=SSH\n\
+width=1024\n\
+height=768\n\
+user="+getUname()+"\n";
+    if(getProxy())
+    {
+        text+="usesshproxy=true\n";
+    }
+    else
+    {
+        text+="usesshproxy=false\n";
+    }
+    if(document.getElementById("pr_same_pass").checked)
+    {
+        text+="sshproxysamepass=true\n";
+    }
+    else
+    {
+        text+="sshproxysamepass=false\n";
+    }
+    if(document.getElementById("pr_same_user").checked)
+    {
+        text+="sshproxysameuser=true\n";
+    }
+    else
+    {
+        text+="sshproxysameuser=false\n";
+        text+="sshproxyuser="+getProxyUser()+"\n";
+    }
+    let filename = name+".x2go";
+    download(filename, text);
+
+}, false);
+
+function updateFpsCount() {
+    var picturesSinceLastUpdate = pictureCount - lastPictureCount;
+    var fpsDisplay = document.getElementById('fps_display');
+
+    fps_display.innerHTML = ' FPS: ' + picturesSinceLastUpdate;
+
+    lastPictureCount = pictureCount;
+
+    console.log(picturesSinceLastUpdate);
+}
+
+function updateBandwidth(){
+    var bandWidth = dataReceived - lastdataReceived;
+    var bandWidthDisplay = document.getElementById('bandwidth_display');
+    bandwidth_display.innerHTML = ' kb/s: ' + bandWidth;
+    lastdataReceived = dataReceived;
+
+    //console.log(bandWidth);
+
+}
+
+function updateDelay(){
+    var delayDisplay = document.getElementById('delay_display');
+    var delayUpdate = serverTime - clientTime;
+    delay_display.innerHTML = ' Delay ' + delayUpdate;
+}
+
+
+function uname_change()
+{
+    if(document.getElementById("pr_same_user").checked)
+    {
+        document.getElementById("pr_uname").value=document.getElementById("uname").value;
+    }
+}
+
+function pr_same_pass_change()
+{
+     document.getElementById("pr_pass").disabled= document.getElementById("pr_same_pass").checked;
+}
+
+function pr_same_user_change()
+{
+     document.getElementById("pr_uname").disabled= document.getElementById("pr_same_user").checked;
+     uname_change();
+}
+
+
+
+function validateForm()
+{
+        let server = getServer();
+        let uname = getUname();
+        let pass = getPass();
+        let proxy = getProxy();
+        let proxyUser=getProxyUser();
+        let proxyPass=getProxyPass();
+
+        if (!server)
+        {
+            alert("Please enter Server Address");
+            return false;
+        }
+        if (!uname)
+        {
+            alert("Please enter Username");
+            return false;
+        }
+        if (document.getElementById("embed").className.indexOf("active") !=-1 && !pass)
+        {
+            alert("Please enter Password");
+            return false;
+        }
+        if(proxy)
+        {
+            if(!proxyUser)
+            {
+                alert("Please enter Proxy Username");
+                return false;
+            }
+            if (document.getElementById("embed").className.indexOf("active") !=-1 && !proxyPass)
+            {
+                alert("Please enter Proxy Password");
+                return false;
+            }
+        }
+        return true;
+}
+
+function download(filename, text) {
+    let element = document.createElement('a');
+    element.setAttribute('href', 'data:application/x-x2go;charset=utf-8,' + encodeURIComponent(text));
+    element.setAttribute('download', filename);
+
+    element.style.display = 'none';
+    document.body.appendChild(element);
+
+    element.click();
+
+    document.body.removeChild(element);
+}
+
+
+function show_advanced()
+{
+    if(document.getElementById("adv").checked)
+    {
+        document.getElementById("proxy-input").style.display="table-cell";
+    }
+    else
+    {
+        document.getElementById("proxy-input").style.display="none";
+    }
+}
+
+function client_choice(e)
+{
+    if(e.target.dataset.type=="embed")
+    {
+        document.getElementById("pass-input").style.display="table-row";
+        document.getElementById("proxy-pass-input").style.display="table-row";
+        document.getElementById("nx-radio").style.display="none";
+        document.getElementById("kdr-radio").style.display="none";
+        document.getElementById("con-btn").style.display="block";
+        document.getElementById("con-btn_t").style.display="none";
+        document.getElementById("client_installer").style.display="none";
+
+        document.getElementById("embed").className="chart-type active";
+        document.getElementById("native").className="chart-type";
+    }
+    else
+    {
+        document.getElementById("pass-input").style.display="none";
+        document.getElementById("proxy-pass-input").style.display="none";
+        document.getElementById("nx-radio").style.display="inline";
+        document.getElementById("kdr-radio").style.display="inline";
+        document.getElementById("con-btn").style.display="none";
+        document.getElementById("con-btn_t").style.display="block";
+        document.getElementById("client_installer").style.display="table-row";
+
+        document.getElementById("embed").className="chart-type";
+        document.getElementById("native").className="chart-type active";
+    }
+}
+
+document.getElementById("server").focus();
+
+
+/// This function are used by X2GoDOMController to get connection data
+
+
+function getServer()
+{
+    return document.getElementById("server").value;
+}
+
+function getUname()
+{
+    return document.getElementById("uname").value;
+}
+
+function  getPass()
+{
+    return document.getElementById("pass").value;
+}
+
+function  getCommand()
+{
+    return document.getElementById("cmd").value;
+}
+
+function  getCompression()
+{
+    return document.getElementById("compression").value;
+}
+
+function getName()
+{
+    return name;
+}
+
+function  getProxy()
+{
+    let proxy=document.getElementById("proxy").value;
+    return proxy;
+}
+
+function  getProxyUser()
+{
+    if(document.getElementById("pr_same_user").checked)
+    {
+        return getUname();
+    }
+
+    return document.getElementById("pr_uname").value;
+}
+
+function  getProxyPass()
+{
+    if(document.getElementById("pr_same_pass").checked)
+    {
+        return getPass();
+    }
+    return document.getElementById("pr_pass").value;
+}
+
+</script>
+
+<canvas id="canvas" width="1920" height="1080" style="display:none;border:1px solid lightgrey;" tabindex='1' ></canvas>
+<script type="text/javascript" src="./dist/x2gokdriveclient.min.js"></script>
+

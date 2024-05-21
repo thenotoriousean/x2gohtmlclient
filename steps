@@ -1,0 +1,57 @@
+cd src
+
+git clone \
+      --branch stable \
+      --depth 1 \
+      https://github.com/ffmpegwasm/x264
+
+cd x264
+
+emconfigure ./configure \
+      --prefix=/var/www/html/x2gotestclient/src/build \
+      --host=x86-gnu \
+      --enable-static \
+      --disable-cli \
+      --disable-asm \
+      --disable-thread \
+      --extra-cflags="-O3 -msimd128"
+emmake make install-lib-static -j
+
+apt-get update && apt-get install -y pkg-config
+
+embuilder build sdl2
+
+cd src
+
+git clone \
+      --branch n6.0 \
+      --depth 1 \
+      https://github.com/FFmpeg/FFmpeg
+
+cd FFmpeg
+
+emconfigure ./configure --cc="emcc" --cxx="em++" --ar="emar" --prefix=$(pwd)/dist \ 
+    --enable-cross-compile --target-os=none --arch=x86_32 --cpu=generic \
+    --enable-gpl --enable-version3 --disable-avdevice --disable-avformat --disable-swresample --disable-postproc --disable-avfilter \
+    --disable-programs --disable-logging --disable-everything \
+    --disable-ffplay --disable-ffprobe --disable-asm --disable-doc --disable-devices --disable-network \
+    --disable-hwaccels --disable-parsers --disable-bsfs --disable-debug --disable-protocols --disable-indevs --disable-outdevs \
+    --enable-decoder=h264  --enable-parser=h264
+
+make
+
+make install
+
+cd src
+
+emcc decoder.c FFmpeg/dist/lib/libavutil.a FFmpeg/dist/lib/libavcodec.a \
+  -I "FFmpeg/dist/include" \
+  -Wno-deprecated-declarations \
+  -O3 -msimd128 \
+  -sMODULARIZE \
+  -sALLOW_TABLE_GROWTH=1 \
+  -sALLOW_MEMORY_GROWTH \
+  -sEXPORTED_FUNCTIONS=$(node export.js) \
+  -sEXPORTED_RUNTIME_METHODS="['addFunction']" \
+  -sRESERVED_FUNCTION_POINTERS=18 \
+  -o ../dist/decoder.js
