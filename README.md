@@ -1,27 +1,14 @@
 # 原版安装教程参考：https://wiki.x2go.org/doku.php/wiki:advanced:x2gohtmlclient?s[]=html
 # 原版x2go的html客户端包含三部分内容：x2gohtmlclient、x2gowebrpc、x2gowswrapper，此版本的客户端在原版基础上添加了webassembly解码模块，主要改动主要集中于x2gohtmlclient部分，xorg版本为deb11u11，具体安装步骤如下：
 
-# 安装qt环境
+# 安装相关环境
 1. 安装相关依赖：
-gcc g++ build-essential make automake autogen autoconf aptitude
-2. 使用aptitude下载相关依赖：
-`aptitude install mesa-common-dev libglu1-mesa-dev freeglut3-dev`
-3. qt官网下载安装包：https://download.qt.io/official_releases/qt/
-4. 赋予权限：
-`chmod +x qt-opensource-linux-x64-5.12.8.run`
-5. 打开qt-opensource-linux-x64-5.12.8.run进行安装
-6. 添加环境变量：
-修改文件：`nano ~/.bashrc`
-添加：`export PATH="/opt/Qt5.12.8/5.12.8/gcc_64/bin":$PATH`
-加载生效：`source ~/.bashrc`
-修改文件：`nano /usr/lib/x86_64-linux-gnu/qt-default/qtchooser/default.conf`
-添加：`/opt/Qt5.12.8/5.12.8/gcc_64/bin`
-检测qmake是否生效：`qmake -v`
+`apt install -y gcc g++ build-essential make automake autogen autoconf aptitude git qtbase5-dev libqt5x11extras5-dev qttools5-dev-tools openssl`
 
 # 安装nginx环境
-1. 下载nginx
+1. 下载nginx: `apt -y install nginx`
 2. 修改nginx配置：
-修改文件：`nano /etc/nginx/nginx.conf`，在http中添加配置，根据自身配置修改ssl_certificate、ssl_certificate_key、root的路径：
+修改文件：`nano /etc/nginx/nginx.conf`，在 http 中添加配置，根据自身配置修改ssl_certificate、ssl_certificate_key、root的路径：
 
 server {
   listen 443 ssl;
@@ -34,7 +21,7 @@ server {
   ssl_session_timeout 5m;
   ssl_session_cache builtin:1000  shared:SSL:10m;
   ssl_session_tickets off;
-  root /home/download;
+  root /var/www/html;
   proxy_read_timeout 300;
 
   location /assets/ {
@@ -69,55 +56,64 @@ server {
 }
 
 # 生成证书：
-1. 安装openssl
-2. 进入目录/etc/nginx/private进行操作
-3. 生成私钥：`openssl genrsa -des3 -out server.key 2048`
-4. 创建证书签名请求CSR文件：`openssl req -new -key server.key -out server.csr`
-5. 复制一份 key 用以消除 key 的密码: `copy server.key server.key.copy`
-6. 消除 key 的密码: `openssl rsa -in server.key.copy -out server.key`
-7. 生成CA证书: `openssl x509 -req -sha256 -days 3650 -in server.csr -signkey server.key -out server.crt`
-8. 添加访问权限：`chmod a+r server.key`、`chmod a+r server.crt`
+1. 进入目录/etc/nginx/private进行操作:
+- `mkdir /etc/nginx/private`
+- `cd /etc/nginx/private`
+2. 生成私钥：`openssl genrsa -des3 -out server.key 2048`，输入密码
+3. 创建证书签名请求CSR文件：`openssl req -new -key server.key -out server.csr`，填写相关信息
+4. 复制一份 key 用以消除 key 的密码: `cp server.key server.key.copy`
+5. 消除 key 的密码: `openssl rsa -in server.key.copy -out server.key`
+6. 生成CA证书: `openssl x509 -req -sha256 -days 3650 -in server.csr -signkey server.key -out server.crt`
+7. 添加访问权限：
+- `chmod a+r server.key`
+- `chmod a+r server.crt`
 
-# 下载源码：
-1. git@github.com:thenotoriousean/x2gohtmlclient.git
-3. git://code.x2go.org/x2gowswrapper.git
+# 下载源码(目录为/var/www/html)：
+1. `git clone https://github.com/thenotoriousean/x2gohtmlclient.git /var/www/html/x2gohtmlclient`(此项目不能放在/root路径下，否则前端无法访问！，建议克隆到/var/www/html下)
+3. `git clone git://code.x2go.org/x2gowswrapper.git`
 
 # 编译x2gowswrapper
-1. 进入x2gowswrapper目录
+1. 进入x2gowswrapper目录: 
 2. 编译：`qmake && make`
 3. 将生成的x2gowswrapper复制到 /usr/sbin下：`cp x2gowswrapper /usr/sbin`
 3. 创建日志目录：`mkdir /var/log/x2gows`
 4. 创建x2gows配置文件目录：`mkdir -p /etc/x2go/x2gows`
-5. 创建x2gows配置文件：`nano x2gows.options`
+5. 创建x2gows配置文件：`nano /etc/x2go/x2gows/x2gows.options`
 6. x2gows.options中添加内容：
 `
 ws_proto=wss
-ssl_cert=/etc/pki/nginx/server.crt
-ssl_key=/etc/pki/nginx/private/server.key
+ssl_cert=/etc/nginx/private/server.crt
+ssl_key=/etc/nginx/private/server.key
 ssl_only=true
 log_dir=/var/log/x2gows
 `
 
-# 安装emsdk
-1. 按照官网安装教程进行安装，安装版本：3.1.18
-2. 官网：https://emscripten.org/docs/getting_started/downloads.html
+# 安装emsdk(按照官网安装教程进行安装，安装版本：3.1.18,官网：https://emscripten.org/docs/getting_started/downloads.html)
+1. `cd /root/qs`
+2. `git clone https://github.com/emscripten-core/emsdk.git`
+3. `cd emsdk`
+4. `./emsdk install 3.1.18`
+5. `./emsdk activate 3.1.18`
+6. `source ./emsdk_env.sh`
 
 
 # 构建x2gohtmlclient
-1. 安装相关依赖包：fcgiwrap,perl,minify,websockify,python
+1. 安装相关依赖包：`apt install fcgiwrap perl minify websockify python cmake`
 2. 使用CPANM shell安装perl相关模块：
 `perl -MCPAN -e shell`
 `install CGI JSON Encode Expect File::Touch`
+3. 安装完成后退出：`quit`
 2. 进入x2gohtmlclient目录下执行minify文件：`./minify.sh`
+
 ## 编译x264:
-1. 进入src目录进行操作
+1. 进入x2gohtmlclient/src目录进行操作:`cd /var/www/html/x2gohtmlclient/src`
 2. 下载x264：
 `git clone \
       --branch stable \
       --depth 1 \
       https://github.com/ffmpegwasm/x264
 `
-3. 进入x264目录进行操作
+3. 进入x264目录进行操作: `cd x264`
 4. 使用emsdk进行编译安装：
 `
 emconfigure ./configure \
@@ -130,11 +126,12 @@ emconfigure ./configure \
       --extra-cflags="-O3 -msimd128"
 `
 5. 安装：
-`emmake make install-lib-static -j`
-`embuilder build sdl2`
+- `emmake make install-lib-static -j`
+- `embuilder build sdl2`
+- `apt-get update && apt-get install -y pkg-config`
 
 ## 编译ffmpeg:
-1. 进入src目录进行操作
+1. 进入src目录进行操作:`cd /var/www/html/x2gohtmlclient/src`
 2. 下载ffmpeg：
 `
 git clone \
@@ -142,11 +139,11 @@ git clone \
       --depth 1 \
       https://github.com/FFmpeg/FFmpeg
 `
-3. 进入ffmpeg目录进行操作
+3. 进入ffmpeg目录进行操作: `cd FFmpeg`
 4. 使用emsdk进行编译安装：
 `
-emconfigure ./configure --cc="emcc" --cxx="em++" --ar="emar" --prefix=$(pwd)/dist \ 
-    --enable-cross-compile --target-os=none --arch=x86_32 --cpu=generic \
+emconfigure ./configure --cc="emcc" --cxx="em++" --ar="emar" --prefix=$(pwd)/dist --enable-cross-compile \
+   --target-os=none --arch=x86_32 --cpu=generic \
     --enable-gpl --enable-version3 --disable-avdevice --disable-avformat --disable-swresample --disable-postproc --disable-avfilter \
     --disable-programs --disable-logging --disable-everything \
     --disable-ffplay --disable-ffprobe --disable-asm --disable-doc --disable-devices --disable-network \
@@ -156,7 +153,7 @@ emconfigure ./configure --cc="emcc" --cxx="em++" --ar="emar" --prefix=$(pwd)/dis
 5. 安装：`make && make install`
 
 ## 安装webassembly模块：
-1. 进入src目录进行操作
+1. 进入src目录进行操作:`cd /var/www/html/x2gohtmlclient/src`
 2. 使用emcc进行编译安装：
 `
 emcc decoder.c FFmpeg/dist/lib/libavutil.a FFmpeg/dist/lib/libavcodec.a \
