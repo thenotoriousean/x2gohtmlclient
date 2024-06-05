@@ -100,8 +100,8 @@ log_dir=/var/log/x2gows
 # 构建x2gohtmlclient
 1. 安装相关依赖包：`apt install fcgiwrap perl minify websockify python cmake`
 2. 使用CPANM shell安装perl相关模块：
-`perl -MCPAN -e shell`
-`install CGI JSON Encode Expect File::Touch`
+- `perl -MCPAN -e shell`
+- `install CGI JSON Encode Expect File::Touch`
 3. 安装完成后退出：`quit`
 2. 进入x2gohtmlclient目录下执行minify文件：`./minify.sh`
 
